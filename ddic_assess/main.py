@@ -892,4 +892,37 @@ async def health():
         "version": "1.2",
         "total_checks": len(RULES),
         "checks": RULES,
+
+    }
+
+
+@app.get("/debug")
+def debug_info():
+    import os
+    import sys
+
+    agents_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
+
+    files_in_agents = []
+    if os.path.exists(agents_dir):
+        files_in_agents = os.listdir(agents_dir)
+
+    routes = []
+    for route in app.routes:
+        if hasattr(route, "methods"):
+            for method in route.methods:
+                routes.append(f"{method} {route.path}")
+
+    return {
+        "working_directory": os.getcwd(),
+        "all_files_in_root": os.listdir("."),
+        "agents_dir_exists": os.path.exists(agents_dir),
+        "files_in_agents": files_in_agents,
+        "init_py_exists": os.path.exists(os.path.join(agents_dir, "__init__.py")),
+        "dtel_file_exists": os.path.exists(os.path.join(agents_dir, "dtel_assess_agent.py")),
+        "table_file_exists": os.path.exists(os.path.join(agents_dir, "table_assess_agent.py")),
+        "agents_loaded": len(AGENTS),
+        "agent_names": [a["name"] for a in AGENTS],
+        "registered_routes": routes,
+        "python_version": sys.version,
     }
