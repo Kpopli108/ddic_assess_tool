@@ -149,7 +149,9 @@ class ScanRequest(BaseModel):
     """
     table_fields: Optional[List[DDICField]] = None
     dtel_properties: Optional[List[DTELProperty]] = None
-    agents: Optional[List[str]] = None          # filter to specific agents
+    struct_fields: Optional[List[DDICField]] = None      # ← NEW
+    doma_properties: Optional[List[DTELProperty]] = None     # ← NEW
+    agents: Optional[List[str]] = None 
 
 
 class AgentResult(BaseModel):
@@ -171,13 +173,4 @@ class ScanResponse(BaseModel):
     all_findings: List[Dict[str, Any]] = []
 
 
-#####
-class ScanRequest(BaseModel):
-    """
-    Unified request body for /scan-all.
-    Send whichever payload sections you have; agents pick what they need.
-    """
-    table_fields: Optional[List[DDICField]] = None
-    dtel_properties: Optional[List[DTELProperty]] = None
-    struct_fields: Optional[List[DDICField]] = None      # ← NEW
-    agents: Optional[List[str]] = None    
+##### 
