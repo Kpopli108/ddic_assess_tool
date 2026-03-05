@@ -169,3 +169,15 @@ class ScanResponse(BaseModel):
     agents_failed: int = 0
     agent_results: List[AgentResult] = []
     all_findings: List[Dict[str, Any]] = []
+
+
+#####
+class ScanRequest(BaseModel):
+    """
+    Unified request body for /scan-all.
+    Send whichever payload sections you have; agents pick what they need.
+    """
+    table_fields: Optional[List[DDICField]] = None
+    dtel_properties: Optional[List[DTELProperty]] = None
+    struct_fields: Optional[List[DDICField]] = None      # ← NEW
+    agents: Optional[List[str]] = None    
