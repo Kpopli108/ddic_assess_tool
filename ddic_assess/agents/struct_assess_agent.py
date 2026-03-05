@@ -368,7 +368,7 @@ def _assess_structure(
                 f"and upgrade safety.",
                 _build_component_snippet(f),
                 fieldname=fname,
-                obj_type="COMPONENT",
+                obj_type="STRUCTURE",
                 extra_meta={
                     "component": fname,
                     "datatype": datatype,
