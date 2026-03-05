@@ -162,7 +162,7 @@ def assess_multiple_dtels(properties: List[DTELProperty] = Body(...)):
 
 
 # ══════════════════════════════════════
-# 6) GET /agents
+# 8) GET /agents
 # ══════════════════════════════════════
 @app.get("/agents")
 def list_agents():
@@ -181,7 +181,7 @@ def list_agents():
 
 
 # ══════════════════════════════════════
-# 7) GET /health
+# 9) GET /health
 # ══════════════════════════════════════
 @app.get("/health")
 def health():
@@ -207,3 +207,37 @@ def show_routes():
                 print(f"  {method:6s} {route.path}")
     print("=" * 50)
     print("")
+
+####
+
+# ══════════════════════════════════════
+# 6) POST /assess-struct
+# ══════════════════════════════════════
+@app.post("/assess-struct")
+def assess_single_struct(fields: List[DDICField] = Body(...)):
+    """Assess a single structure from DDICField list."""
+    print(">>> /assess-struct called with", len(fields), "fields")
+    request = ScanRequest(struct_fields=fields, agents=["struct_assess"])
+    response = run_agents(request, ["struct_assess"])
+    for ar in response.agent_results:
+        if ar.results:
+            return ar.results[0]
+    return {"tabname": "", "fields": [], "findings": []}
+
+
+# ══════════════════════════════════════
+# 7) POST /assess-structs
+# ══════════════════════════════════════
+@app.post("/assess-structs")
+def assess_multiple_structs(fields: List[DDICField] = Body(...)):
+    """Assess multiple structures from DDICField list."""
+    print(">>> /assess-structs called with", len(fields), "fields")
+    request = ScanRequest(struct_fields=fields, agents=["struct_assess"])
+    response = run_agents(request, ["struct_assess"])
+    results = []
+    for ar in response.agent_results:
+        if ar.results:
+            for r in ar.results:
+                if r.get("findings"):
+                    results.append(r)
+    return results
