@@ -94,8 +94,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check01_TableClass",
-            "severity": "critical", "line": None,
+            "issue_type": "TableClass",
+            "severity": "error", "line": None,
             "message": (
                 f"Table class is '{tabclass}' (pool/cluster). "
                 f"Not supported in S/4HANA. Must convert to transparent table."
@@ -121,8 +121,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check02_DeliveryClass",
-            "severity": "warning", "line": None,
+            "issue_type": "DeliveryClass",
+            "severity": "error", "line": None,
             "message": f"Delivery class '{contflag}' is unusual or invalid.",
             "suggestion": (
                 f"Set delivery class for '{tabname}' to one of: "
@@ -142,8 +142,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check02_DeliveryClass",
-            "severity": "warning", "line": None,
+            "issue_type": "DeliveryClass",
+            "severity": "error", "line": None,
             "message": "Delivery class is empty. Must be maintained.",
             "suggestion": (
                 f"Set delivery class for '{tabname}'. "
@@ -165,8 +165,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check03_EnhancementCategory",
-            "severity": "warning", "line": None,
+            "issue_type": "EnhancementCategory",
+            "severity": "error", "line": None,
             "message": (
                 f"Enhancement category is '{exclass or 'empty'}' "
                 f"(not classified). Must be set for S/4HANA."
@@ -197,8 +197,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "MANDT",
             "type": "FIELD", "name": "MANDT",
             "start_line": None, "end_line": None,
-            "issue_type": "Check04_ClientHandling",
-            "severity": "high", "line": None,
+            "issue_type": "ClientHandling",
+            "severity": "error", "line": None,
             "message": (
                 "MANDT field exists but is NOT part of primary key. "
                 "Client-dependent table must have MANDT as first key field."
@@ -222,8 +222,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check05_PrimaryKeyMissing",
-            "severity": "critical", "line": None,
+            "issue_type": "PrimaryKeyMissing",
+            "severity": "error", "line": None,
             "message": "No primary key fields detected.",
             "suggestion": f"Define primary key fields for table '{tabname}'.",
             "snippet": table_snippet,
@@ -238,8 +238,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": "",
                 "type": "TABLE", "name": tabname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check05_PrimaryKeyWide",
-                "severity": "warning", "line": None,
+                "issue_type": "PrimaryKeyWide",
+                "severity": "error", "line": None,
                 "message": (
                     f"Primary key has {len(key_fields)} fields (wide key). "
                     f"Key fields: {', '.join(key_fields)}."
@@ -266,8 +266,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                     "object_name": tabname, "fieldname": k,
                     "type": "FIELD", "name": k,
                     "start_line": None, "end_line": None,
-                    "issue_type": "Check05_PrimaryKeyDeepType",
-                    "severity": "critical", "line": None,
+                    "issue_type": "PrimaryKeyDeepType",
+                    "severity": "error", "line": None,
                     "message": (
                         f"Key field '{k}' uses deep type '{inttype}'. "
                         f"Deep types not allowed in primary keys."
@@ -304,8 +304,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": fname,
                 "type": "FIELD", "name": fname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check06_CurrencyReference",
-                "severity": "high", "line": None,
+                "issue_type": "CurrencyReference",
+                "severity": "error", "line": None,
                 "message": (
                     f"Field '{fname}' (domain '{f.domname}', "
                     f"datatype '{f.datatype}') is a currency amount "
@@ -328,8 +328,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": fname,
                 "type": "FIELD", "name": fname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check06_QuantityReference",
-                "severity": "high", "line": None,
+                "issue_type": "QuantityReference",
+                "severity": "error", "line": None,
                 "message": (
                     f"Field '{fname}' (domain '{f.domname}', "
                     f"datatype '{f.datatype}') is a quantity "
@@ -352,8 +352,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": fname,
                 "type": "FIELD", "name": fname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check06_MissingRefField",
-                "severity": "warning", "line": None,
+                "issue_type": "MissingRefField",
+                "severity": "error", "line": None,
                 "message": (
                     f"Field '{fname}' has REFTABLE='{reftable}' "
                     f"but REFFIELD is empty."
@@ -383,8 +383,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check07_Buffering",
-            "severity": "warning", "line": None,
+            "issue_type": "Buffering",
+            "severity": "error", "line": None,
             "message": (
                 f"Buffering is enabled (BUFALLOW='{bufallow}', "
                 f"Type='{pufferung}' - {puffer_desc}). Review for S/4HANA."
@@ -409,8 +409,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check08_DataClass",
-            "severity": "warning", "line": None,
+            "issue_type": "DataClass",
+            "severity": "error", "line": None,
             "message": "Data class (TABART) is empty.",
             "suggestion": (
                 f"Maintain data class in technical settings for '{tabname}'."
@@ -427,8 +427,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check08_SizeCategory",
-            "severity": "warning", "line": None,
+            "issue_type": "SizeCategory",
+            "severity": "error", "line": None,
             "message": (
                 f"Size category (SCHFELDANZ) is '{schfeldanz or 'empty'}'."
             ),
@@ -451,8 +451,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check09_ChangeLogging",
-            "severity": "warning", "line": None,
+            "issue_type": "ChangeLogging",
+            "severity": "error", "line": None,
             "message": "Change logging is NOT enabled.",
             "suggestion": (
                 f"Consider enabling change logging for '{tabname}' "
@@ -473,8 +473,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check10_AuthGroup",
-            "severity": "warning", "line": None,
+            "issue_type": "AuthGroup",
+            "severity": "error", "line": None,
             "message": "No authorization group assigned.",
             "suggestion": (
                 f"Assign authorization group to '{tabname}' "
@@ -501,8 +501,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": fname,
                 "type": "FIELD", "name": fname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check11_MissingDataElement",
-                "severity": "warning", "line": None,
+                "issue_type": "MissingDataElement",
+                "severity": "error", "line": None,
                 "message": (
                     f"Field '{fname}' has no data element (ROLLNAME)."
                 ),
@@ -523,8 +523,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
                 "object_name": tabname, "fieldname": fname,
                 "type": "FIELD", "name": fname,
                 "start_line": None, "end_line": None,
-                "issue_type": "Check11_MissingDomain",
-                "severity": "warning", "line": None,
+                "issue_type": "MissingDomain",
+                "severity": "error", "line": None,
                 "message": f"Field '{fname}' has no domain (DOMNAME).",
                 "suggestion": (
                     f"Assign a domain to field '{fname}' "
@@ -551,8 +551,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check12_FieldCount",
-            "severity": "warning", "line": None,
+            "issue_type": "FieldCount",
+            "severity": "error", "line": None,
             "message": (
                 f"Table has {field_count} fields. Consider normalization."
             ),
@@ -569,8 +569,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check12_FieldCount",
-            "severity": "info", "line": None,
+            "issue_type": "FieldCount",
+            "severity": "error", "line": None,
             "message": (
                 f"Table has {field_count} fields. Review if all needed."
             ),
@@ -594,8 +594,8 @@ def _assess_table(tabname: str, fields: List[DDICField]) -> Dict[str, Any]:
             "object_name": tabname, "fieldname": "",
             "type": "TABLE", "name": tabname,
             "start_line": None, "end_line": None,
-            "issue_type": "Check13_ChangeLogDataClass",
-            "severity": "warning", "line": None,
+            "issue_type": "ChangeLogDataClass",
+            "severity": "error", "line": None,
             "message": (
                 f"Change logging is active but data class is '{tabart}'. "
                 f"Tables with data class APPL0 or APPL1 are typically "
