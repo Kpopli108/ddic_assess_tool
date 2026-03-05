@@ -218,7 +218,8 @@ def _make_finding(
     obj_type: str = "STRUCTURE",
     extra_meta: Dict[str, Any] = None,
 ) -> Dict[str, Any]:
-    """Create a standardized finding dict matching table agent format."""
+    """Create a standardized finding dict matching table agent format.
+    Severity is always set to 'error' regardless of the input parameter."""
     meta = {
         "rule": rule_id,
         "check": issue_type.lower(),
@@ -235,7 +236,7 @@ def _make_finding(
         "start_line": None,
         "end_line": None,
         "issue_type": issue_type,
-        "severity": severity,
+        "severity": "error",
         "line": None,
         "message": message,
         "suggestion": suggestion,
@@ -290,7 +291,7 @@ def _assess_structure(
     if tabclass and tabclass != "INTTAB":
         findings.append(_make_finding(
             struct_name, 1,
-            "Check01_StructureType",
+            "StructureType",
             "warning",
             f"Structure '{struct_name}' has TABCLASS='{tabclass}' "
             f"instead of expected 'INTTAB'. This may not be a "
@@ -311,7 +312,7 @@ def _assess_structure(
     if exclass == "0" or not exclass:
         findings.append(_make_finding(
             struct_name, 2,
-            "Check02_EnhancementCategory",
+            "EnhancementCategory",
             "warning",
             f"Enhancement category is '{exclass or 'empty'}' "
             f"(not classified). Must be set for S/4HANA. "
@@ -329,7 +330,7 @@ def _assess_structure(
     elif exclass not in valid_exclass:
         findings.append(_make_finding(
             struct_name, 2,
-            "Check02_EnhancementCategory",
+            "EnhancementCategory",
             "info",
             f"Enhancement category is '{exclass}' — not a standard "
             f"value (1-4). Review for correctness.",
@@ -358,7 +359,7 @@ def _assess_structure(
         if not rollname:
             findings.append(_make_finding(
                 struct_name, 3,
-                "Check03_MissingDataElement",
+                "MissingDataElement",
                 "warning",
                 f"Component '{fname}' has no data element (ROLLNAME). "
                 f"Direct type definition reduces reusability and "
@@ -389,7 +390,7 @@ def _assess_structure(
         if not domname:
             findings.append(_make_finding(
                 struct_name, 4,
-                "Check04_MissingDomain",
+                "MissingDomain",
                 "info",
                 f"Component '{fname}' has no domain (DOMNAME). "
                 f"Domains provide value ranges, fixed values, and "
@@ -414,7 +415,7 @@ def _assess_structure(
         if len(struct_name) < 4:
             findings.append(_make_finding(
                 struct_name, 5,
-                "Check05_NamingStructure",
+                "NamingStructure",
                 "warning",
                 f"Custom structure name '{struct_name}' is very short "
                 f"({len(struct_name)} chars). Poor discoverability.",
@@ -430,7 +431,7 @@ def _assess_structure(
             if len(fname) < 2:
                 findings.append(_make_finding(
                     struct_name, 5,
-                    "Check05_NamingComponent",
+                    "NamingComponent",
                     "info",
                     f"Component '{fname}' name is very short "
                     f"({len(fname)} chars). Poor readability.",
@@ -466,7 +467,7 @@ def _assess_structure(
             )
             findings.append(_make_finding(
                 struct_name, 6,
-                "Check06_DeepType",
+                "DeepType",
                 "high",
                 f"Component '{fname}' uses deep type "
                 f"(INTTYPE='{inttype}', DATATYPE='{datatype}'). "
@@ -514,7 +515,7 @@ def _assess_structure(
         if is_curr and not reffield:
             findings.append(_make_finding(
                 struct_name, 7,
-                "Check07_CurrencyReference",
+                "CurrencyReference",
                 "high",
                 f"Component '{fname}' (domain='{f.domname}', "
                 f"datatype='{f.datatype}') is a currency amount "
@@ -537,7 +538,7 @@ def _assess_structure(
         if is_quan and not reffield:
             findings.append(_make_finding(
                 struct_name, 7,
-                "Check07_QuantityReference",
+                "QuantityReference",
                 "high",
                 f"Component '{fname}' (domain='{f.domname}', "
                 f"datatype='{f.datatype}') is a quantity field "
@@ -568,7 +569,7 @@ def _assess_structure(
             dep = DEPRECATED_TYPES[datatype]
             findings.append(_make_finding(
                 struct_name, 8,
-                "Check08_DeprecatedType",
+                "DeprecatedType",
                 "critical",
                 f"Component '{fname}' uses deprecated data type "
                 f"'{datatype}'. {dep['description']}. "
@@ -609,7 +610,7 @@ def _assess_structure(
             if leng > 0 and leng < fl["new_length"]:
                 findings.append(_make_finding(
                     struct_name, 9,
-                    "Check09_FieldLengthChange",
+                    "FieldLengthChange",
                     "critical",
                     f"Component '{fname}' references '{match_key}' "
                     f"({fl['description']}). Current length={leng} "
@@ -644,7 +645,7 @@ def _assess_structure(
             display_name = rollname if rollname else inc_name
             findings.append(_make_finding(
                 struct_name, 10,
-                "Check10_IncludeStructure",
+                "IncludeStructure",
                 "info",
                 f"Structure includes '{display_name}'. Verify that "
                 f"the included structure is S/4HANA compatible. "
@@ -670,7 +671,7 @@ def _assess_structure(
     if comp_count > 200:
         findings.append(_make_finding(
             struct_name, 11,
-            "Check11_ComponentCount",
+            "ComponentCount",
             "warning",
             f"Structure has {comp_count} components. Excessive "
             f"complexity impacts maintainability and performance "
@@ -688,7 +689,7 @@ def _assess_structure(
     elif comp_count > 100:
         findings.append(_make_finding(
             struct_name, 11,
-            "Check11_ComponentCount",
+            "ComponentCount",
             "info",
             f"Structure has {comp_count} components. Review if "
             f"all are needed.",
@@ -703,7 +704,7 @@ def _assess_structure(
     elif comp_count == 0:
         findings.append(_make_finding(
             struct_name, 11,
-            "Check11_EmptyStructure",
+            "EmptyStructure",
             "warning",
             f"Structure '{struct_name}' has no components. "
             f"Empty structures should be removed.",
@@ -726,7 +727,7 @@ def _assess_structure(
             si_info = SIMPLIFICATION_DATAELEMENT[rollname]
             findings.append(_make_finding(
                 struct_name, 12,
-                "Check12_SimplificationItem",
+                "SimplificationItem",
                 "high",
                 f"Component '{fname}' uses data element "
                 f"'{rollname}' which is related to S/4HANA "
@@ -752,7 +753,7 @@ def _assess_structure(
             si_info = SIMPLIFICATION_DOMAINS[domname]
             findings.append(_make_finding(
                 struct_name, 12,
-                "Check12_SimplificationDomain",
+                "SimplificationDomain",
                 "warning",
                 f"Component '{fname}' uses domain '{domname}' "
                 f"related to S/4HANA simplification: {si_info}.",
@@ -783,7 +784,7 @@ def _assess_structure(
             if intlen != expected_unicode and intlen != leng:
                 findings.append(_make_finding(
                     struct_name, 13,
-                    "Check13_UnicodeMismatch",
+                    "UnicodeMismatch",
                     "warning",
                     f"Component '{fname}' internal length ({intlen}) "
                     f"may not match Unicode expectation "
@@ -817,7 +818,7 @@ def _assess_structure(
             rollname = (f.rollname or "").strip()
             findings.append(_make_finding(
                 struct_name, 14,
-                "Check14_TableTypeComponent",
+                "TableTypeComponent",
                 "high",
                 f"Component '{fname}' is a table type "
                 f"(DATATYPE='{datatype}', ROLLNAME='{rollname}'). "
@@ -861,7 +862,7 @@ def _assess_structure(
 
         findings.append(_make_finding(
             struct_name, 15,
-            "Check15_MissingFieldText",
+            "MissingFieldText",
             "info",
             f"{len(missing_text_components)} component(s) have no "
             f"field text and no data element: {comp_list}. "
@@ -900,7 +901,7 @@ def _assess_structure(
                 display = ", ".join(comp_names)
             findings.append(_make_finding(
                 struct_name, 16,
-                "Check16_RedundantPattern",
+                "RedundantPattern",
                 "info",
                 f"{len(comp_names)} components share type/length "
                 f"'{type_key}': {display}. "
@@ -933,7 +934,7 @@ def _assess_structure(
         if reftable and not reffield:
             findings.append(_make_finding(
                 struct_name, 17,
-                "Check17_IncompleteReference",
+                "IncompleteReference",
                 "warning",
                 f"Component '{fname}' has REFTABLE='{reftable}' "
                 f"but REFFIELD is empty. Incomplete reference "
@@ -966,7 +967,7 @@ def _assess_structure(
                 dep_info = DEPRECATED_DOMAINS[domname]
                 findings.append(_make_finding(
                     struct_name, 18,
-                    "Check18_ObsoleteDomain",
+                    "ObsoleteDomain",
                     "warning",
                     f"Component '{fname}' uses domain '{domname}' "
                     f"associated with deprecated functionality: "
