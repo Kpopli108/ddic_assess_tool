@@ -241,3 +241,36 @@ def assess_multiple_structs(fields: List[DDICField] = Body(...)):
                 if r.get("findings"):
                     results.append(r)
     return results
+
+
+# ══════════════════════════════════════
+# POST /assess-doma
+# ══════════════════════════════════════
+@app.post("/assess-doma")
+def assess_single_doma(properties: List[DTELProperty] = Body(...)):
+    """Assess a single domain from DTELProperty list."""
+    print(">>> /assess-doma called with", len(properties), "properties")
+    request = ScanRequest(doma_properties=properties, agents=["doma_assess"])
+    response = run_agents(request, ["doma_assess"])
+    for ar in response.agent_results:
+        if ar.results:
+            return ar.results[0]
+    return {"domain_name": "", "properties": [], "findings": []}
+
+
+# ══════════════════════════════════════
+# POST /assess-domas
+# ══════════════════════════════════════
+@app.post("/assess-domas")
+def assess_multiple_domas(properties: List[DTELProperty] = Body(...)):
+    """Assess multiple domains from DTELProperty list."""
+    print(">>> /assess-domas called with", len(properties), "properties")
+    request = ScanRequest(doma_properties=properties, agents=["doma_assess"])
+    response = run_agents(request, ["doma_assess"])
+    results = []
+    for ar in response.agent_results:
+        if ar.results:
+            for r in ar.results:
+                if r.get("findings"):
+                    results.append(r)
+    return results    
