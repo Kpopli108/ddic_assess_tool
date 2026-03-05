@@ -386,7 +386,7 @@ def _safe_int(val: str) -> int:
 def _make_finding(
     domain_name: str,
     rule_id: str,
-    severity: str,
+    issue_type: str,
     message: str,
     suggestion: str,
     snippet: str,
@@ -416,8 +416,8 @@ def _make_finding(
         "name": obj_name or domain_name,
         "start_line": None,
         "end_line": None,
-        "issue_type": rule_id,
-        "severity": severity,
+        "issue_type": issue_type,
+        "severity": "error",
         "line": None,
         "message": message,
         "suggestion": suggestion,
@@ -484,7 +484,8 @@ def _assess_domain(
     if data_type in DEPRECATED_TYPES:
         dep = DEPRECATED_TYPES[data_type]
         findings.append(_make_finding(
-            domain_name, dep["rule"], "critical",
+            domain_name, dep["rule"],
+            "DEPRECATED_DATA_TYPE",
             f"Domain '{domain_name}' uses deprecated data type "
             f"'{data_type}'. Not supported in S/4HANA. "
             f"This will cause activation errors after migration.",
@@ -504,7 +505,8 @@ def _assess_domain(
         fl = S4_FIELD_LENGTH_MAP[domain_name]
         if length > 0 and length < fl["new_length"]:
             findings.append(_make_finding(
-                domain_name, "FLEN_01", "critical",
+                domain_name, "FLEN_01",
+                "FIELD_LENGTH_INCOMPATIBLE",
                 f"Domain '{domain_name}' ({fl['description']}) has "
                 f"length {length} but S/4HANA requires "
                 f"{fl['new_length']}. All dependent data elements, "
@@ -523,7 +525,8 @@ def _assess_domain(
             ))
         else:
             findings.append(_make_finding(
-                domain_name, "FLEN_02", "info",
+                domain_name, "FLEN_02",
+                "FIELD_LENGTH_CHANGE_ASSOCIATED",
                 f"Domain '{domain_name}' is associated with "
                 f"S/4HANA field length change ({fl['description']}). "
                 f"Current length {length} meets requirement "
@@ -544,7 +547,8 @@ def _assess_domain(
     if is_custom:
         if len(domain_name) < 4:
             findings.append(_make_finding(
-                domain_name, "NAME_01", "warning",
+                domain_name, "NAME_01",
+                "NAME_TOO_SHORT",
                 f"Custom domain name '{domain_name}' is very short "
                 f"({len(domain_name)} chars). Poor discoverability.",
                 f"Rename to Z<namespace>_D_<description> or "
@@ -556,7 +560,8 @@ def _assess_domain(
         name_body = domain_name[1:]
         if "_" not in name_body and len(name_body) > 5:
             findings.append(_make_finding(
-                domain_name, "NAME_02", "info",
+                domain_name, "NAME_02",
+                "NAME_LACKS_UNDERSCORES",
                 f"Custom domain '{domain_name}' lacks underscores "
                 f"for readability.",
                 f"Use Z_<namespace>_<description> or "
@@ -569,7 +574,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if not description:
         findings.append(_make_finding(
-            domain_name, "DOC_01", "high",
+            domain_name, "DOC_01",
+            "DESCRIPTION_MISSING",
             f"Domain '{domain_name}' has no description. "
             f"Poor documentation reduces maintainability and "
             f"impact analysis accuracy.",
@@ -579,7 +585,8 @@ def _assess_domain(
         ))
     elif len(description) < 5:
         findings.append(_make_finding(
-            domain_name, "NAME_03", "warning",
+            domain_name, "NAME_03",
+            "DESCRIPTION_TOO_SHORT",
             f"Domain '{domain_name}' description is too short "
             f"({len(description)} chars): '{description}'.",
             f"Provide a descriptive text (minimum 10 characters).",
@@ -594,7 +601,8 @@ def _assess_domain(
             and data_type in ("CHAR", "NUMC")
             and 0 < length <= 4):
         findings.append(_make_finding(
-            domain_name, "FXVL_01", "info",
+            domain_name, "FXVL_01",
+            "NO_FIXED_VALUES",
             f"Domain '{domain_name}' ({data_type}, length {length}) "
             f"has no fixed values defined. Short code-type domains "
             f"should have fixed values for validation.",
@@ -613,7 +621,8 @@ def _assess_domain(
             fv_key = fv.get("key", "")
             if " " in fv_key.strip():
                 findings.append(_make_finding(
-                    domain_name, "FXVL_02", "warning",
+                    domain_name, "FXVL_02",
+                    "FIXED_VALUE_KEY_HAS_SPACES",
                     f"Fixed value key '{fv_key}' contains spaces. "
                     f"This may cause inconsistent data entry and "
                     f"comparison issues.",
@@ -634,7 +643,8 @@ def _assess_domain(
                 fv_key = fv.get("key", "")
                 if len(fv_key) > length:
                     findings.append(_make_finding(
-                        domain_name, "FXVL_03", "critical",
+                        domain_name, "FXVL_03",
+                        "FIXED_VALUE_KEY_EXCEEDS_LENGTH",
                         f"Fixed value key '{fv_key}' "
                         f"(length {len(fv_key)}) exceeds domain "
                         f"length {length}. Data truncation will occur.",
@@ -665,7 +675,8 @@ def _assess_domain(
 
         if fv_no_desc:
             findings.append(_make_finding(
-                domain_name, "FXVL_04", "info",
+                domain_name, "FXVL_04",
+                "FIXED_VALUE_DESCRIPTION_MISSING",
                 f"{len(fv_no_desc)} fixed value(s) have no "
                 f"description: {', '.join(fv_no_desc[:5])}"
                 f"{'...' if len(fv_no_desc) > 5 else ''}. "
@@ -685,7 +696,8 @@ def _assess_domain(
     if (not value_table and not fixed_vals and fv_count == 0
             and is_character and 0 < length <= 10):
         findings.append(_make_finding(
-            domain_name, "VTAB_01", "info",
+            domain_name, "VTAB_01",
+            "NO_VALUE_TABLE",
             f"Domain '{domain_name}' has no value table and no "
             f"fixed values. No validation mechanism exists for "
             f"data entry.",
@@ -700,7 +712,8 @@ def _assess_domain(
 
     if value_table and value_table in S4_SIMPLIFIED_TABLES:
         findings.append(_make_finding(
-            domain_name, "VTAB_02", "high",
+            domain_name, "VTAB_02",
+            "VALUE_TABLE_SIMPLIFIED",
             f"Domain '{domain_name}' value table '{value_table}' "
             f"is affected by S/4HANA simplification. This table "
             f"may be deprecated or restructured.",
@@ -726,7 +739,8 @@ def _assess_domain(
 
         if is_custom_conv:
             findings.append(_make_finding(
-                domain_name, "CONV_02", "high",
+                domain_name, "CONV_02",
+                "CUSTOM_CONVERSION_ROUTINE",
                 f"Domain '{domain_name}' uses custom conversion "
                 f"routine '{conv_routine}'. Custom conversion "
                 f"routines must be tested and potentially adapted "
@@ -743,7 +757,8 @@ def _assess_domain(
         elif conv_routine in S4_SENSITIVE_CONVERSION_ROUTINES:
             info = S4_SENSITIVE_CONVERSION_ROUTINES[conv_routine]
             findings.append(_make_finding(
-                domain_name, "CONV_01", "warning",
+                domain_name, "CONV_01",
+                "SENSITIVE_CONVERSION_ROUTINE",
                 f"Domain '{domain_name}' uses conversion routine "
                 f"'{conv_routine}'. {info}.",
                 f"Verify conversion routine '{conv_routine}' "
@@ -757,7 +772,8 @@ def _assess_domain(
             ))
         else:
             findings.append(_make_finding(
-                domain_name, "CONV_01", "info",
+                domain_name, "CONV_01",
+                "CONVERSION_ROUTINE_PRESENT",
                 f"Domain '{domain_name}' has conversion routine "
                 f"'{conv_routine}'. Verify S/4HANA compatibility.",
                 f"Test conversion routine '{conv_routine}' in "
@@ -774,7 +790,8 @@ def _assess_domain(
     if lowercase == "X":
         if is_character and data_type in ("CHAR", "SSTRING", "STRING"):
             findings.append(_make_finding(
-                domain_name, "LCASE_01", "info",
+                domain_name, "LCASE_01",
+                "LOWERCASE_ENABLED",
                 f"Domain '{domain_name}' allows lowercase. This "
                 f"may cause inconsistent data storage and "
                 f"comparison issues.",
@@ -785,7 +802,8 @@ def _assess_domain(
         elif data_type in ("NUMC", "DATS", "TIMS", "DEC", "INT4",
                            "INT1", "INT2", "INT8"):
             findings.append(_make_finding(
-                domain_name, "LCASE_02", "warning",
+                domain_name, "LCASE_02",
+                "LOWERCASE_IRRELEVANT",
                 f"Domain '{domain_name}' has lowercase flag on "
                 f"'{data_type}' — irrelevant for non-character "
                 f"types.",
@@ -800,7 +818,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if output_len == 0:
         findings.append(_make_finding(
-            domain_name, "OLEN_02", "warning",
+            domain_name, "OLEN_02",
+            "OUTPUT_LENGTH_ZERO",
             f"Domain '{domain_name}' output length is zero or "
             f"not maintained.",
             f"Set output length for domain '{domain_name}'. "
@@ -815,7 +834,8 @@ def _assess_domain(
           and output_len < length
           and data_type not in ("DEC", "CURR", "QUAN", "FLTP")):
         findings.append(_make_finding(
-            domain_name, "OLEN_01", "warning",
+            domain_name, "OLEN_01",
+            "OUTPUT_LENGTH_TRUNCATION",
             f"Domain '{domain_name}' output length ({output_len}) "
             f"is less than domain length ({length}). Display "
             f"truncation may occur.",
@@ -833,7 +853,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if sign_flag == "X" and not is_numeric:
         findings.append(_make_finding(
-            domain_name, "SIGN_01", "warning",
+            domain_name, "SIGN_01",
+            "SIGN_FLAG_IRRELEVANT",
             f"Domain '{domain_name}' has sign flag enabled on "
             f"non-numeric type '{data_type}'. Sign flag is only "
             f"relevant for numeric types.",
@@ -847,7 +868,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if wu_count == 0:
         findings.append(_make_finding(
-            domain_name, "REUS_01", "warning",
+            domain_name, "REUS_01",
+            "POSSIBLY_OBSOLETE",
             f"Domain '{domain_name}' has no where-used references. "
             f"It may be obsolete.",
             f"Delete domain '{domain_name}' if unused, or assign "
@@ -857,7 +879,8 @@ def _assess_domain(
         ))
     elif is_custom and wu_count == 1:
         findings.append(_make_finding(
-            domain_name, "REUS_02", "info",
+            domain_name, "REUS_02",
+            "LOW_REUSE",
             f"Custom domain '{domain_name}' is used in only "
             f"{wu_count} data element(s). Low reuse.",
             f"Review if a standard SAP domain can be used "
@@ -871,7 +894,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if domain_name in SIMPLIFICATION_MAP:
         findings.append(_make_finding(
-            domain_name, "SIMP_01", "high",
+            domain_name, "SIMP_01",
+            "SIMPLIFICATION_ITEM",
             f"Domain '{domain_name}' is related to S/4HANA "
             f"simplification: "
             f"{SIMPLIFICATION_MAP[domain_name]}.",
@@ -887,7 +911,8 @@ def _assess_domain(
     if (domain_name in DEPRECATED_DOMAINS
             and domain_name not in SIMPLIFICATION_MAP):
         findings.append(_make_finding(
-            domain_name, "SIMP_02", "warning",
+            domain_name, "SIMP_02",
+            "DEPRECATED_DOMAIN_FUNCTIONALITY",
             f"Domain '{domain_name}' is associated with "
             f"deprecated functionality: "
             f"{DEPRECATED_DOMAINS[domain_name]}.",
@@ -905,7 +930,8 @@ def _assess_domain(
     if is_character and length > 0:
         expected_unicode = length * 2
         findings.append(_make_finding(
-            domain_name, "UNIC_01", "info",
+            domain_name, "UNIC_01",
+            "UNICODE_LENGTH_CHECK",
             f"Domain '{domain_name}' is character-type "
             f"'{data_type}' with length {length}. In Unicode "
             f"systems, internal length should be {expected_unicode} "
@@ -925,7 +951,8 @@ def _assess_domain(
     # ─────────────────────────────────────
     if lang_count < 2:
         findings.append(_make_finding(
-            domain_name, "LANG_01", "info",
+            domain_name, "LANG_01",
+            "MISSING_TRANSLATIONS",
             f"Domain '{domain_name}' has only {lang_count} "
             f"language(s). Multi-language support recommended "
             f"for global deployments.",
@@ -946,7 +973,8 @@ def _assess_domain(
     if is_currency:
         if decimals_v < 5:
             findings.append(_make_finding(
-                domain_name, "DECP_01", "warning",
+                domain_name, "DECP_01",
+                "CURRENCY_DECIMAL_INSUFFICIENT",
                 f"Currency domain '{domain_name}' has "
                 f"{decimals_v} decimal places. S/4HANA supports "
                 f"up to 5 decimal places for currency amounts.",
@@ -963,7 +991,8 @@ def _assess_domain(
     if is_numeric and not is_currency and not is_quantity:
         if data_type == "DEC" and length > 0 and decimals_v == 0:
             findings.append(_make_finding(
-                domain_name, "DECP_02", "info",
+                domain_name, "DECP_02",
+                "DECIMAL_PRECISION_REVIEW",
                 f"Numeric domain '{domain_name}' (DEC, "
                 f"length {length}) has 0 decimal places. "
                 f"Verify if decimals are needed.",
