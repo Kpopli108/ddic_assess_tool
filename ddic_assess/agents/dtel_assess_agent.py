@@ -375,7 +375,7 @@ def _safe_int(val: str) -> int:
 def _make_finding(
     rollname: str,
     rule_id: str,
-    severity: str,
+    issue_type: str,
     message: str,
     suggestion: str,
     snippet: str,
@@ -403,8 +403,8 @@ def _make_finding(
         "type": obj_type,
         "name": obj_name or rollname,
         "start_line": None, "end_line": None,
-        "issue_type": rule_id,
-        "severity": severity,
+        "issue_type": issue_type,
+        "severity": "error",
         "line": None,
         "message": message,
         "suggestion": suggestion,
@@ -474,7 +474,8 @@ def _assess_data_element(
     if data_type in DEPRECATED_TYPES:
         dep = DEPRECATED_TYPES[data_type]
         findings.append(_make_finding(
-            rollname, dep["rule"], "critical",
+            rollname, dep["rule"],
+            "DEPRECATED_DATA_TYPE",
             f"Data element '{rollname}' uses deprecated data type "
             f"'{data_type}'. Not supported in S/4HANA.",
             f"Replace '{data_type}' with '{dep['replacement']}'.",
@@ -490,7 +491,8 @@ def _assess_data_element(
         fl = S4_FIELD_LENGTH_MAP[rollname]
         if length < fl["new_length"]:
             findings.append(_make_finding(
-                rollname, "FLEN_01", "critical",
+                rollname, "FLEN_01",
+                "FIELD_LENGTH_CHANGE",
                 f"'{rollname}' ({fl['description']}) length {length} "
                 f"but S/4HANA requires {fl['new_length']}.",
                 f"Extend to {fl['new_length']}. Review dependents.",
@@ -507,7 +509,8 @@ def _assess_data_element(
         dom_info = S4_FIELD_LENGTH_MAP.get(domain_name.upper(), {})
         if dom_info and length < dom_info.get("new_length", 0):
             findings.append(_make_finding(
-                rollname, "FLEN_06", "high",
+                rollname, "FLEN_06",
+                "CUSTOM_FIELD_LENGTH_INCOMPATIBLE",
                 f"Custom '{rollname}' uses domain '{domain_name}' "
                 f"extended to {dom_info['new_length']} in S/4HANA, "
                 f"current length {length}.",
@@ -524,7 +527,8 @@ def _assess_data_element(
     if is_custom:
         if len(rollname) < 3:
             findings.append(_make_finding(
-                rollname, "NAME_01", "warning",
+                rollname, "NAME_01",
+                "NAME_TOO_SHORT",
                 f"Custom '{rollname}' is very short ({len(rollname)} chars).",
                 f"Rename to Z<namespace>_<description>.",
                 snippet,
@@ -534,7 +538,8 @@ def _assess_data_element(
         name_body = rollname[1:]
         if "_" not in name_body and len(name_body) > 5:
             findings.append(_make_finding(
-                rollname, "NAME_02", "info",
+                rollname, "NAME_02",
+                "NAME_LACKS_UNDERSCORES",
                 f"Custom '{rollname}' lacks underscores for readability.",
                 f"Use Z_<namespace>_<description>.",
                 snippet,
@@ -542,13 +547,15 @@ def _assess_data_element(
 
     if not description:
         findings.append(_make_finding(
-            rollname, "NAME_05", "high",
+            rollname, "NAME_05",
+            "DESCRIPTION_MISSING",
             f"'{rollname}' has no description.",
             f"Maintain a meaningful description.", snippet,
         ))
     elif len(description) < 5:
         findings.append(_make_finding(
-            rollname, "NAME_05", "warning",
+            rollname, "NAME_05",
+            "DESCRIPTION_TOO_SHORT",
             f"'{rollname}' description too short ({len(description)} chars).",
             f"Provide descriptive text (min 10 chars).", snippet,
             extra_meta={"description_length": len(description)},
@@ -561,7 +568,8 @@ def _assess_data_element(
     if not heading:     missing_labels.append("Heading")
     if missing_labels:
         findings.append(_make_finding(
-            rollname, "NAME_03", "high",
+            rollname, "NAME_03",
+            "FIELD_LABELS_MISSING",
             f"'{rollname}' missing labels: {', '.join(missing_labels)}.",
             f"Maintain all field labels.", snippet,
             extra_meta={"missing_labels": missing_labels},
@@ -571,7 +579,8 @@ def _assess_data_element(
                    [short_text, medium_text, long_text, heading] if t]
     if len(label_texts) >= 3 and len(set(label_texts)) == 1:
         findings.append(_make_finding(
-            rollname, "NAME_06", "info",
+            rollname, "NAME_06",
+            "FIELD_LABELS_IDENTICAL",
             f"All labels for '{rollname}' are identical: "
             f"'{label_texts[0]}'.",
             f"Short=abbreviated, Medium=concise, Long=descriptive.",
@@ -585,7 +594,8 @@ def _assess_data_element(
     if (short_text and medium_text
             and len(short_text) > len(medium_text)):
         findings.append(_make_finding(
-            rollname, "NAME_04", "warning",
+            rollname, "NAME_04",
+            "FIELD_LABEL_LENGTH_HIERARCHY",
             f"Short text longer than medium text.",
             f"Short text should be shorter than medium.", snippet,
             extra_meta={
@@ -601,7 +611,8 @@ def _assess_data_element(
     ]:
         if lbl_text and lbl_max > 0 and len(lbl_text) > lbl_max:
             findings.append(_make_finding(
-                rollname, "NAME_07", "warning",
+                rollname, "NAME_07",
+                "LABEL_EXCEEDS_MAX_LENGTH",
                 f"{lbl_name} text exceeds max length {lbl_max}.",
                 f"Shorten to fit {lbl_max} characters.", snippet,
                 extra_meta={
@@ -614,7 +625,8 @@ def _assess_data_element(
     lang_count = counts.get("languages", len(languages))
     if lang_count < 2:
         findings.append(_make_finding(
-            rollname, "NAME_08", "info",
+            rollname, "NAME_08",
+            "MISSING_TRANSLATIONS",
             f"'{rollname}' has only {lang_count} language(s).",
             f"Translate into all required languages.", snippet,
             extra_meta={
@@ -626,7 +638,8 @@ def _assess_data_element(
     # ─── DOMAIN COMPATIBILITY ───
     if type_def != "Domain-Based" or not domain_name:
         findings.append(_make_finding(
-            rollname, "DOMN_01", "warning",
+            rollname, "DOMN_01",
+            "NOT_DOMAIN_BASED",
             f"'{rollname}' is not domain-based (Type: '{type_def}').",
             f"Create and assign a domain.", snippet,
             extra_meta={"type_definition": type_def},
@@ -643,7 +656,8 @@ def _assess_data_element(
 
         if not dom_desc:
             findings.append(_make_finding(
-                rollname, "DOMN_02", "warning",
+                rollname, "DOMN_02",
+                "DOMAIN_DESCRIPTION_MISSING",
                 f"Domain '{domain_name}' has no description.",
                 f"Maintain description.", snippet,
                 obj_type="DOMAIN", obj_name=domain_name,
@@ -653,7 +667,8 @@ def _assess_data_element(
                 and data_type in ("CHAR", "NUMC")
                 and 0 < length <= 4):
             findings.append(_make_finding(
-                rollname, "DOMN_03", "info",
+                rollname, "DOMN_03",
+                "DOMAIN_NO_FIXED_VALUES",
                 f"Domain '{domain_name}' ({data_type}, len {length}) "
                 f"has no fixed values.",
                 f"Consider adding fixed values.", snippet,
@@ -664,7 +679,8 @@ def _assess_data_element(
                 and data_type in ("CHAR", "NUMC")
                 and 0 < length <= 10):
             findings.append(_make_finding(
-                rollname, "DOMN_04", "info",
+                rollname, "DOMN_04",
+                "DOMAIN_NO_VALUE_TABLE",
                 f"Domain '{domain_name}' has no value table and "
                 f"no fixed values.",
                 f"Assign value table or fixed values.", snippet,
@@ -675,7 +691,8 @@ def _assess_data_element(
             "CHAR", "SSTRING", "STRING"
         ):
             findings.append(_make_finding(
-                rollname, "DOMN_05", "info",
+                rollname, "DOMN_05",
+                "LOWERCASE_ENABLED",
                 f"Domain '{domain_name}' allows lowercase.",
                 f"Disable unless explicitly required.", snippet,
                 obj_type="DOMAIN", obj_name=domain_name,
@@ -685,7 +702,8 @@ def _assess_data_element(
             "NUMC", "DATS", "TIMS", "DEC", "INT4"
         ):
             findings.append(_make_finding(
-                rollname, "DOMN_06", "warning",
+                rollname, "DOMN_06",
+                "LOWERCASE_IRRELEVANT",
                 f"Domain '{domain_name}' lowercase on '{data_type}' "
                 f"is irrelevant.",
                 f"Remove lowercase flag.", snippet,
@@ -694,7 +712,8 @@ def _assess_data_element(
 
         if is_custom_domain and wu_count <= 1:
             findings.append(_make_finding(
-                rollname, "DOMN_07", "info",
+                rollname, "DOMN_07",
+                "DOMAIN_LOW_REUSE",
                 f"Custom domain '{domain_name}' used in only "
                 f"{wu_count} table(s).",
                 f"Review if reusable or replace with standard.",
@@ -705,7 +724,8 @@ def _assess_data_element(
 
         if convexit:
             findings.append(_make_finding(
-                rollname, "DOMN_08", "info",
+                rollname, "DOMN_08",
+                "CONVERSION_ROUTINE_PRESENT",
                 f"Domain '{domain_name}' has conversion routine "
                 f"'{convexit}'.",
                 f"Test in S/4HANA. Custom routines may need migration.",
@@ -717,14 +737,16 @@ def _assess_data_element(
     # ─── CURRENCY / QUANTITY ───
     if data_type in CURRENCY_TYPES:
         findings.append(_make_finding(
-            rollname, "CURQ_01", "high",
+            rollname, "CURQ_01",
+            "CURRENCY_REFERENCE_MISSING",
             f"'{rollname}' is CURR. Must reference currency key.",
             f"Ensure CUKY reference via REFTABLE/REFFIELD.", snippet,
             extra_meta={"data_type": data_type},
         ))
         if decimals_v < 5:
             findings.append(_make_finding(
-                rollname, "CURQ_03", "warning",
+                rollname, "CURQ_03",
+                "CURRENCY_DECIMAL_CHANGE",
                 f"Currency '{rollname}' has {decimals_v} decimals. "
                 f"S/4HANA uses 5.",
                 f"Review decimal handling.", snippet,
@@ -735,7 +757,8 @@ def _assess_data_element(
 
     if data_type in QUANTITY_TYPES:
         findings.append(_make_finding(
-            rollname, "CURQ_02", "high",
+            rollname, "CURQ_02",
+            "QUANTITY_REFERENCE_MISSING",
             f"'{rollname}' is QUAN. Must reference unit of measure.",
             f"Ensure UNIT reference via REFTABLE/REFFIELD.", snippet,
             extra_meta={"data_type": data_type},
@@ -744,7 +767,8 @@ def _assess_data_element(
     # ─── CUSTOM CODE ADAPTATION ───
     if wu_count == 0:
         findings.append(_make_finding(
-            rollname, "CUST_01", "warning",
+            rollname, "CUST_01",
+            "POSSIBLY_OBSOLETE",
             f"'{rollname}' not used in any table. May be obsolete.",
             f"Delete if unused.", snippet,
             extra_meta={"where_used_count": 0},
@@ -755,7 +779,8 @@ def _assess_data_element(
     if (sh_status == "Not Assigned" or not sh_name):
         if data_type in ("CHAR", "NUMC", "SSTRING") and length >= 3:
             findings.append(_make_finding(
-                rollname, "CUST_02", "info",
+                rollname, "CUST_02",
+                "NO_SEARCH_HELP",
                 f"'{rollname}' has no search help.",
                 f"Assign if user-facing.", snippet,
             ))
@@ -764,14 +789,16 @@ def _assess_data_element(
     pid_status = pid.get("Parameter ID", "").strip()
     if pid_status == "Not Assigned" or not pid_value:
         findings.append(_make_finding(
-            rollname, "CUST_03", "info",
+            rollname, "CUST_03",
+            "NO_PARAMETER_ID",
             f"'{rollname}' has no parameter ID.",
             f"Assign if used in selection screens.", snippet,
         ))
 
     if ref_kind and not ref_type:
         findings.append(_make_finding(
-            rollname, "CUST_04", "warning",
+            rollname, "CUST_04",
+            "REFERENCE_TYPE_MISSING",
             f"'{rollname}' has ref kind '{ref_kind}' but no ref type.",
             f"Assign reference type.", snippet,
             extra_meta={"ref_kind": ref_kind},
@@ -781,7 +808,8 @@ def _assess_data_element(
             and output_len < length
             and data_type not in ("DEC", "CURR", "QUAN", "FLTP")):
         findings.append(_make_finding(
-            rollname, "CUST_05", "warning",
+            rollname, "CUST_05",
+            "OUTPUT_LENGTH_TRUNCATION",
             f"'{rollname}' output length ({output_len}) < field "
             f"length ({length}). Truncation risk.",
             f"Set output length >= field length.", snippet,
@@ -795,7 +823,8 @@ def _assess_data_element(
         expected = length * 2
         if int_len != expected and int_len != length:
             findings.append(_make_finding(
-                rollname, "UNIC_01", "warning",
+                rollname, "UNIC_01",
+                "UNICODE_LENGTH_MISMATCH",
                 f"'{rollname}' internal length ({int_len}) may not "
                 f"match Unicode expectation ({expected}).",
                 f"Verify internal length alignment.", snippet,
@@ -809,7 +838,8 @@ def _assess_data_element(
 
     if data_type in ("RAW", "LRAW", "RAWSTRING"):
         findings.append(_make_finding(
-            rollname, "UNIC_02", "info",
+            rollname, "UNIC_02",
+            "RAW_TYPE_BYTE_ALIGNMENT",
             f"'{rollname}' uses RAW type '{data_type}'. "
             f"Verify byte alignment.",
             f"Review byte handling in structures.", snippet,
@@ -824,7 +854,8 @@ def _assess_data_element(
     ]
     if simplified_hits:
         findings.append(_make_finding(
-            rollname, "TMAP_01", "high",
+            rollname, "TMAP_01",
+            "USED_IN_SIMPLIFIED_TABLE",
             f"'{rollname}' used in simplified table(s): "
             f"{', '.join(simplified_hits)}.",
             f"Map to new S/4HANA structures (ACDOCA, MATDOC, etc.).",
@@ -839,7 +870,8 @@ def _assess_data_element(
         dom_vt = dom.get("Value Table", "").strip().upper()
         if dom_vt in S4_SIMPLIFIED_TABLES:
             findings.append(_make_finding(
-                rollname, "TMAP_02", "high",
+                rollname, "TMAP_02",
+                "DEPRECATED_VALUE_TABLE",
                 f"Domain '{domain_name}' value table '{dom_vt}' is "
                 f"deprecated in S/4HANA.",
                 f"Update value table to S/4HANA replacement.", snippet,
@@ -850,7 +882,8 @@ def _assess_data_element(
     # ─── SIMPLIFICATION ITEM ───
     if rollname in SIMPLIFICATION_MAP:
         findings.append(_make_finding(
-            rollname, "SIMP_01", "high",
+            rollname, "SIMP_01",
+            "SIMPLIFICATION_ITEM",
             f"'{rollname}' is related to: "
             f"{SIMPLIFICATION_MAP[rollname]}.",
             f"Review Simplification Item list. SAP Note 2313884.",
@@ -864,7 +897,8 @@ def _assess_data_element(
     if (domain_name.upper() in DEPRECATED_DOMAINS
             and rollname not in SIMPLIFICATION_MAP):
         findings.append(_make_finding(
-            rollname, "SIMP_02", "warning",
+            rollname, "SIMP_02",
+            "DEPRECATED_DOMAIN_FUNCTIONALITY",
             f"Domain '{domain_name}' associated with deprecated "
             f"functionality: "
             f"{DEPRECATED_DOMAINS[domain_name.upper()]}.",
