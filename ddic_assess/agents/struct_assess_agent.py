@@ -219,7 +219,9 @@ def _make_finding(
     extra_meta: Dict[str, Any] = None,
 ) -> Dict[str, Any]:
     """Create a standardized finding dict matching table agent format.
-    Severity is always set to 'error' regardless of the input parameter."""
+    'type' is always 'STRUCTURE' so LLM API extracts correct header type.
+    'sub_type' preserves granular detail (COMPONENT, INCLUDE, etc.).
+    'severity' is always 'error' as required."""
     meta = {
         "rule": rule_id,
         "check": issue_type.lower(),
@@ -231,7 +233,8 @@ def _make_finding(
     return {
         "object_name": struct_name,
         "fieldname": fieldname,
-        "type": obj_type,
+        "type": "STRUCTURE",
+        "sub_type": obj_type,
         "name": fieldname if fieldname else struct_name,
         "start_line": None,
         "end_line": None,
@@ -369,7 +372,7 @@ def _assess_structure(
                 f"and upgrade safety.",
                 _build_component_snippet(f),
                 fieldname=fname,
-                obj_type="STRUCTURE",
+                obj_type="COMPONENT",
                 extra_meta={
                     "component": fname,
                     "datatype": datatype,
